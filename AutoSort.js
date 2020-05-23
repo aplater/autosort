@@ -4,30 +4,60 @@ class AutoSort {
 
         this.sheet = SpreadsheetApp.getActiveSheet()
 
-        this.rowPosition = 1
+        this.rowTarget = null
+        this.columnTarget = null
     }
 
     /**
-     * 指定のセルに選択した範囲をペーストする。
+     * 選択範囲を指定範囲にペーストする。
      * 
-     * @param {number} endRow
-     * @param {object} selected 選択範囲
+     * @param {number} rowEnd
+     * @param {object} select
      * @return {void}
      */
-    paste(endRow, selected) {
+    paste(rowEnd, select) {
 
-        selected.copyTo(this.sheet.getRange(this.rowPosition, 1))
-        this.rowPosition = this.rowPosition + endRow - 1
+        let columnTarget = 1
+
+        let target = this.sheet.getRange(this.rowTarget, columnTarget)
+        select.copyTo(target)
+
+        this.rowTarget = this.rowTarget + rowEnd - 1
     }
 
     /**
-     * 参照範囲を取得する。
+     * 選択範囲をソートする。
+     * 
+     * @param {number} refColumn
+     * @param {object} select
+     * @return {void}
+     */
+    sort(refColumn, select) {
+
+        select.sort(refColumn)
+    }
+
+    /**
+     * コピーの範囲を選択する。
      * 
      * @param {number} refRow
      * @param {number} refColumn
+     * @param {number} rowEnd
+     * @return {object}
+     */
+    select(refRow, refColumn, rowEnd) {
+
+        return this.sheet.getRange(refRow, refColumn, rowEnd, 1)
+    }
+
+    /**
+     * コピーする範囲の最終行を取得する。
+     * 
+     * @param {number} refrow
+     * @param {number} refColumn
      * @return {number}
      */
-    endPoint(refRow, refColumn) {
+    rowEnd(refRow, refColumn) {
 
         let value = null
 
@@ -35,42 +65,20 @@ class AutoSort {
             value = this.sheet.getRange(refRow, refColumn).getValue()
             refRow ++
         }
-
-        return refRow = refRow - 1
+        return (refRow - 1)
     }
 
     /**
-     * ソートを実行する。
+     * 指定範囲（ペーストの対象範囲）を設定する。
      * 
-     * @param {number} column
+     * @param {number} rowTarget
+     * @param {number} columnTarget
      * @return {void}
      */
-    sort(column) {
+    setTarget(rowTarget, columnTarget) {
 
-        console.log(column)
-        this.sheet.sort(column)
-    }
-
-    /**
-     * 参照範囲を選択する。
-     * 
-     * @param {number} refRow
-     * @param {number} refColumn
-     * @param {number} tables
-     * @return {void}
-     */
-    select(refRow, refColumn, tables) {
-
-        let endRow = null
-        let selected = null
-
-        for (let i = refColumn; i < tables + refColumn; i ++) {
-            this.sort(i)
-            endRow = this.endPoint(refRow, i)
-            selected = this.sheet.getRange(refRow, i, endRow, 1)
-
-            this.paste(endRow, selected)
-        }
+        this.rowTarget = rowTarget
+        this.columnTarget = columnTarget
     }
 
     /**
@@ -79,10 +87,22 @@ class AutoSort {
      * @param {number} refRow
      * @param {number} refColumn
      * @param {number} tables
-     * @return {void}
+     * @returns {void}
      */
     execute(refRow, refColumn, tables) {
 
-        this.select(refRow, refColumn, tables)
+        let rowEnd = null
+        let select = null
+
+        for (let i = refColumn; i < refColumn + tables; i ++) {
+            // 最終行を取得する。
+            rowEnd = this.rowEnd(refRow, i)
+            // 選択範囲をコピーする。
+            select = this.select(refRow, i, rowEnd)
+            // 選択範囲をソートする。
+            this.sort(i, select)
+            // 指定範囲にペーストする。
+            this.paste(rowEnd, select)
+        }
     }
 }
